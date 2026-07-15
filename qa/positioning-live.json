@@ -1,0 +1,18 @@
+{
+  "status": "passed",
+  "audit_commit": "d2b389882cf44d1691070e45519dc4f8992cde12",
+  "live_url": "https://russelldudek.github.io/allstate/",
+  "required_positioning": "passed",
+  "old_defensive_framing_removed": "passed",
+  "live_byte_matches": {
+    "index.html": true,
+    "cover-letter.html": true,
+    "interview-brief.html": true,
+    "docs/Russell-Dudek-Allstate-Cover-Letter.pdf": true,
+    "docs/Russell-Dudek-Allstate-Interview-Brief.pdf": true
+  },
+  "live_pdf_page_counts": {
+    "cover_letter": 1,
+    "interview_brief": 4
+  }
+}

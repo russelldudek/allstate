@@ -53,3 +53,11 @@ Campaign state: complete. Repository, artifact, print, confidentiality, interact
 - Preserved evidence boundaries and did not add unverified platform-ownership claims.
 - Regenerated the affected PDFs and re-verified the exact one-page cover letter and four-page interview brief contracts.
 - Revision source commit: `66942d9f73156cbb9a28e4ce3a1c28678a51d2b6`.
+
+
+## Live positioning revision verification - July 15, 2026
+- Live candidate vision, cover letter, and interview brief contain the affirmative platform-authority case.
+- The superseded defensive objection language is absent from live HTML and regenerated PDF text.
+- Five revised live assets matched the committed files byte-for-byte.
+- Live PDF page contracts passed at `1 / 4` for cover letter and interview brief.
+- Audit trigger commit: `d2b389882cf44d1691070e45519dc4f8992cde12`.
