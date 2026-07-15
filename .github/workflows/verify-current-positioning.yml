@@ -1,0 +1,122 @@
+name: Verify current Allstate positioning
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/verify-current-positioning.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out current main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Install PDF inspection tools
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends poppler-utils zip
+
+      - name: Compare live campaign with current main
+        id: audit
+        shell: bash
+        run: |
+          set -u
+          base='https://russelldudek.github.io/allstate'
+          report='/tmp/current-live-audit.txt'
+          mkdir -p /tmp/live/docs
+          : > "$report"
+          failures=0
+
+          files=(
+            index.html
+            resume.html
+            cover-letter.html
+            interview-brief.html
+            120-day-plan.html
+            ai-action-trace.html
+            styles.css
+            brand-tokens.css
+            app.js
+            assets/brand/allstate-hands.png
+            docs/Russell-Dudek-Allstate-Resume.pdf
+            docs/Russell-Dudek-Allstate-Cover-Letter.pdf
+            docs/Russell-Dudek-Allstate-Interview-Brief.pdf
+            docs/Russell-Dudek-Allstate-120-Day-Plan.pdf
+            docs/Russell-Dudek-Allstate-AI-Action-Trace-Review.pdf
+          )
+
+          printf 'audited_main=%s\nbase=%s\n' "$(git rev-parse HEAD)" "$base" >> "$report"
+          for file in "${files[@]}"; do
+            mkdir -p "/tmp/live/$(dirname "$file")"
+            if ! curl --fail --location --retry 18 --retry-delay 5 --retry-all-errors --output "/tmp/live/$file" "$base/$file"; then
+              printf 'FETCH_FAIL %s\n' "$file" >> "$report"
+              failures=$((failures + 1))
+              continue
+            fi
+            local_sha="$(sha256sum "$file" | awk '{print $1}')"
+            live_sha="$(sha256sum "/tmp/live/$file" | awk '{print $1}')"
+            if cmp --silent "$file" "/tmp/live/$file"; then
+              printf 'MATCH %s %s\n' "$file" "$local_sha" >> "$report"
+            else
+              printf 'MISMATCH %s local=%s live=%s\n' "$file" "$local_sha" "$live_sha" >> "$report"
+              failures=$((failures + 1))
+            fi
+          done
+
+          checks=0
+          grep -Fq 'Why this is a principal-level fit' /tmp/live/index.html || checks=$((checks + 1))
+          grep -Fq 'make the whole AI platform system cohere' /tmp/live/index.html || checks=$((checks + 1))
+          grep -Fq 'The strongest reason to interview me' /tmp/live/cover-letter.html || checks=$((checks + 1))
+          grep -Fq 'Why the evidence compounds at platform level.' /tmp/live/interview-brief.html || checks=$((checks + 1))
+          grep -Fq 'Architecture working session' /tmp/live/interview-brief.html || checks=$((checks + 1))
+
+          for banned in 'The hard objection' 'hyperscale multi-cloud' 'verified record does not support that claim' 'State the gap plainly.' 'What transfers - and what does not.'; do
+            if grep -RFiq "$banned" /tmp/live; then
+              printf 'BANNED_PHRASE %s\n' "$banned" >> "$report"
+              checks=$((checks + 1))
+            fi
+          done
+
+          test "$(pdfinfo /tmp/live/docs/Russell-Dudek-Allstate-Resume.pdf | awk '/^Pages:/{print $2}')" = '2' || checks=$((checks + 1))
+          test "$(pdfinfo /tmp/live/docs/Russell-Dudek-Allstate-Cover-Letter.pdf | awk '/^Pages:/{print $2}')" = '1' || checks=$((checks + 1))
+          test "$(pdfinfo /tmp/live/docs/Russell-Dudek-Allstate-Interview-Brief.pdf | awk '/^Pages:/{print $2}')" = '4' || checks=$((checks + 1))
+          test "$(pdfinfo /tmp/live/docs/Russell-Dudek-Allstate-120-Day-Plan.pdf | awk '/^Pages:/{print $2}')" = '3' || checks=$((checks + 1))
+          test "$(pdfinfo /tmp/live/docs/Russell-Dudek-Allstate-AI-Action-Trace-Review.pdf | awk '/^Pages:/{print $2}')" = '2' || checks=$((checks + 1))
+
+          if grep -RIniE 'role[ -]?forge|russelldudek/roleforge' /tmp/live >> "$report"; then
+            checks=$((checks + 1))
+          fi
+
+          failures=$((failures + checks))
+          printf 'failures=%s\n' "$failures" >> "$report"
+          cat "$report"
+          echo "failures=$failures" >> "$GITHUB_OUTPUT"
+
+      - name: Package current main source
+        shell: bash
+        run: |
+          zip -qr /tmp/allstate-current-source.zip . -x '.git/*' '.github/workflows/verify-current-positioning.yml'
+
+      - name: Upload audit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: allstate-current-live-audit
+          path: /tmp/current-live-audit.txt
+
+      - name: Upload current source
+        uses: actions/upload-artifact@v4
+        with:
+          name: allstate-current-source
+          path: /tmp/allstate-current-source.zip
+
+      - name: Enforce current release gate
+        shell: bash
+        run: |
+          test '${{ steps.audit.outputs.failures }}' = '0'
+          echo "Current live campaign matches main $(git rev-parse HEAD) byte for byte."
