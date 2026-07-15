@@ -1,0 +1,31 @@
+{
+  "routes": [
+    "index.html",
+    "resume.html",
+    "cover-letter.html",
+    "interview-brief.html",
+    "120-day-plan.html",
+    "ai-action-trace.html"
+  ],
+  "viewports": {
+    "desktop": [
+      1440,
+      900
+    ],
+    "laptop": [
+      1280,
+      800
+    ],
+    "tablet": [
+      768,
+      1024
+    ],
+    "mobile": [
+      390,
+      844
+    ]
+  },
+  "findings": [],
+  "status": "passed",
+  "method": "Chromium set_content with local assets inlined because managed browser policy blocks localhost and file URLs."
+}

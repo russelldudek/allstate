@@ -1,0 +1,35 @@
+{
+  "campaign": "Allstate - Principal Platform Consultant, AI Platforms",
+  "candidate": "Russell Dudek",
+  "job_posting": "https://www.allstate.jobs/job/23571947/principal-platform-consultant-ai-platforms-remote-il/?source=LinkedInJB&utm_source=LILimitedListings&source=linkedinjobpostings",
+  "live_candidate_vision": "https://russelldudek.github.io/allstate/",
+  "routes": [
+    "index.html",
+    "resume.html",
+    "cover-letter.html",
+    "interview-brief.html",
+    "120-day-plan.html",
+    "ai-action-trace.html"
+  ],
+  "styles": [
+    "styles.css",
+    "brand-tokens.css",
+    "app.js"
+  ],
+  "brand": [
+    "brand-intelligence.md",
+    "assets/brand/allstate-hands.png"
+  ],
+  "documents": [
+    "docs/Russell-Dudek-Allstate-Resume.pdf",
+    "docs/Russell-Dudek-Allstate-Cover-Letter.pdf",
+    "docs/Russell-Dudek-Allstate-Interview-Brief.pdf",
+    "docs/Russell-Dudek-Allstate-120-Day-Plan.pdf",
+    "docs/Russell-Dudek-Allstate-AI-Action-Trace-Review.pdf"
+  ],
+  "notes": [
+    "README.md",
+    "sources.md",
+    "campaign-audit.md"
+  ]
+}
