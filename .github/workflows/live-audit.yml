@@ -46,11 +46,15 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends poppler-utils
 
       - name: Retrieve and compare live campaign
+        id: comparison
         shell: bash
         run: |
-          set -euo pipefail
+          set -u
           base='https://russelldudek.github.io/allstate'
+          report='/tmp/live-audit.txt'
           mkdir -p /tmp/live/docs
+          : > "$report"
+          failures=0
 
           files=(
             index.html
@@ -70,23 +74,53 @@ jobs:
             docs/Russell-Dudek-Allstate-AI-Action-Trace-Review.pdf
           )
 
+          printf 'audited_main=%s\nbase=%s\n' "$(git rev-parse HEAD)" "$base" >> "$report"
+
           for file in "${files[@]}"; do
             mkdir -p "/tmp/live/$(dirname "$file")"
-            curl --fail --location --retry 24 --retry-delay 5 --retry-all-errors \
-              --output "/tmp/live/$file" "$base/$file"
-            cmp --silent "$file" "/tmp/live/$file"
+            if ! curl --fail --location --retry 12 --retry-delay 5 --retry-all-errors \
+              --output "/tmp/live/$file" "$base/$file"; then
+              printf 'FETCH_FAIL %s\n' "$file" >> "$report"
+              failures=$((failures + 1))
+              continue
+            fi
+            local_sha="$(sha256sum "$file" | awk '{print $1}')"
+            live_sha="$(sha256sum "/tmp/live/$file" | awk '{print $1}')"
+            local_size="$(stat -c %s "$file")"
+            live_size="$(stat -c %s "/tmp/live/$file")"
+            if cmp --silent "$file" "/tmp/live/$file"; then
+              printf 'MATCH %s local=%s live=%s bytes=%s\n' "$file" "$local_sha" "$live_sha" "$local_size" >> "$report"
+            else
+              printf 'MISMATCH %s local=%s live=%s local_bytes=%s live_bytes=%s\n' "$file" "$local_sha" "$live_sha" "$local_size" "$live_size" >> "$report"
+              failures=$((failures + 1))
+            fi
           done
 
-          grep -Fq 'AI should move fast' /tmp/live/index.html
-          grep -Fq 'AI Action Flight Recorder' /tmp/live/ai-action-trace.html
+          checks=0
+          grep -Fq 'AI should move fast' /tmp/live/index.html || checks=$((checks + 1))
+          grep -Fq 'AI Action Flight Recorder' /tmp/live/ai-action-trace.html || checks=$((checks + 1))
+          test "$(pdfinfo /tmp/live/docs/Russell-Dudek-Allstate-Resume.pdf | awk '/^Pages:/{print $2}')" = '2' || checks=$((checks + 1))
+          test "$(pdfinfo /tmp/live/docs/Russell-Dudek-Allstate-Cover-Letter.pdf | awk '/^Pages:/{print $2}')" = '1' || checks=$((checks + 1))
+          test "$(pdfinfo /tmp/live/docs/Russell-Dudek-Allstate-Interview-Brief.pdf | awk '/^Pages:/{print $2}')" = '4' || checks=$((checks + 1))
+          test "$(pdfinfo /tmp/live/docs/Russell-Dudek-Allstate-120-Day-Plan.pdf | awk '/^Pages:/{print $2}')" = '3' || checks=$((checks + 1))
+          test "$(pdfinfo /tmp/live/docs/Russell-Dudek-Allstate-AI-Action-Trace-Review.pdf | awk '/^Pages:/{print $2}')" = '2' || checks=$((checks + 1))
+          if grep -RIniE 'role[ -]?forge|russelldudek/roleforge' /tmp/live >> "$report"; then
+            checks=$((checks + 1))
+          fi
 
-          test "$(pdfinfo /tmp/live/docs/Russell-Dudek-Allstate-Resume.pdf | awk '/^Pages:/{print $2}')" = '2'
-          test "$(pdfinfo /tmp/live/docs/Russell-Dudek-Allstate-Cover-Letter.pdf | awk '/^Pages:/{print $2}')" = '1'
-          test "$(pdfinfo /tmp/live/docs/Russell-Dudek-Allstate-Interview-Brief.pdf | awk '/^Pages:/{print $2}')" = '4'
-          test "$(pdfinfo /tmp/live/docs/Russell-Dudek-Allstate-120-Day-Plan.pdf | awk '/^Pages:/{print $2}')" = '3'
-          test "$(pdfinfo /tmp/live/docs/Russell-Dudek-Allstate-AI-Action-Trace-Review.pdf | awk '/^Pages:/{print $2}')" = '2'
+          failures=$((failures + checks))
+          printf 'failures=%s\n' "$failures" >> "$report"
+          cat "$report"
+          echo "failures=$failures" >> "$GITHUB_OUTPUT"
 
-          ! grep -RIniE 'role[ -]?forge|russelldudek/roleforge' /tmp/live
+      - name: Upload live audit diagnostics
+        uses: actions/upload-artifact@v4
+        with:
+          name: allstate-live-audit
+          path: /tmp/live-audit.txt
 
-      - name: Report audited source
-        run: echo "Live files match audited main $(git rev-parse HEAD) byte for byte."
+      - name: Enforce live audit
+        shell: bash
+        run: |
+          test '${{ steps.comparison.outputs.failures }}' = '0'
+          echo "Live files match audited main $(git rev-parse HEAD) byte for byte."
