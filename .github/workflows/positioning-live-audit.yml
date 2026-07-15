@@ -1,0 +1,126 @@
+name: Verify live positioning refresh
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: allstate-positioning-live-audit
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out campaign
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install audit tooling
+        run: python -m pip install --disable-pip-version-check requests pypdf
+
+      - name: Verify live revised pages and PDFs
+        env:
+          AUDIT_COMMIT: ${{ github.sha }}
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from pypdf import PdfReader
+          import hashlib, io, json, os, time
+          import requests
+
+          base = 'https://russelldudek.github.io/allstate/'
+          assets = [
+              'index.html',
+              'cover-letter.html',
+              'interview-brief.html',
+              'docs/Russell-Dudek-Allstate-Cover-Letter.pdf',
+              'docs/Russell-Dudek-Allstate-Interview-Brief.pdf',
+          ]
+          required = {
+              'index.html': ['Why this is a principal-level fit', 'make the whole AI platform system cohere', "Russell's differentiator", 'How he would earn technical authority'],
+              'cover-letter.html': ['The strongest reason to interview me', 'one coherent platform direction'],
+              'interview-brief.html': ['Why the evidence compounds at platform level.', 'The principal-level question', 'Why the answer can be yes', 'Architecture working session'],
+          }
+          banned = ['The hard objection', 'hyperscale multi-cloud', 'verified record does not support that claim', 'fiction that adjacent', 'State the gap plainly.', 'What transfers - and what does not.']
+
+          session = requests.Session()
+          live = None
+          last_error = None
+          for attempt in range(18):
+              try:
+                  candidate = {}
+                  for asset in assets:
+                      response = session.get(base + asset, timeout=30, headers={'Cache-Control': 'no-cache'})
+                      response.raise_for_status()
+                      candidate[asset] = response.content
+                  ok = True
+                  for path, phrases in required.items():
+                      text = candidate[path].decode('utf-8', errors='replace')
+                      ok = ok and all(phrase in text for phrase in phrases)
+                      ok = ok and all(phrase.lower() not in text.lower() for phrase in banned)
+                  if ok:
+                      live = candidate
+                      break
+                  last_error = 'live content had not yet reached the revised positioning'
+              except Exception as exc:
+                  last_error = repr(exc)
+              time.sleep(10)
+          assert live is not None, last_error
+
+          byte_matches = {}
+          for asset, payload in live.items():
+              local = Path(asset).read_bytes()
+              byte_matches[asset] = hashlib.sha256(payload).hexdigest() == hashlib.sha256(local).hexdigest()
+          assert all(byte_matches.values()), byte_matches
+
+          page_counts = {
+              'cover_letter': len(PdfReader(io.BytesIO(live['docs/Russell-Dudek-Allstate-Cover-Letter.pdf'])).pages),
+              'interview_brief': len(PdfReader(io.BytesIO(live['docs/Russell-Dudek-Allstate-Interview-Brief.pdf'])).pages),
+          }
+          assert page_counts == {'cover_letter': 1, 'interview_brief': 4}, page_counts
+
+          pdf_text = '\n'.join(
+              page.extract_text() or ''
+              for path in ['docs/Russell-Dudek-Allstate-Cover-Letter.pdf', 'docs/Russell-Dudek-Allstate-Interview-Brief.pdf']
+              for page in PdfReader(io.BytesIO(live[path])).pages
+          )
+          for phrase in banned:
+              assert phrase.lower() not in pdf_text.lower(), phrase
+
+          report = {
+              'status': 'passed',
+              'audit_commit': os.environ['AUDIT_COMMIT'],
+              'live_url': base,
+              'required_positioning': 'passed',
+              'old_defensive_framing_removed': 'passed',
+              'live_byte_matches': byte_matches,
+              'live_pdf_page_counts': page_counts,
+          }
+          Path('qa/positioning-live.json').write_text(json.dumps(report, indent=2) + '\n')
+
+          audit = Path('campaign-audit.md')
+          text = audit.read_text()
+          marker = '## Live positioning revision verification - July 15, 2026'
+          if marker not in text:
+              text += f'''\n\n{marker}\n- Live candidate vision, cover letter, and interview brief contain the affirmative platform-authority case.\n- The superseded defensive objection language is absent from live HTML and regenerated PDF text.\n- Five revised live assets matched the committed files byte-for-byte.\n- Live PDF page contracts passed at `1 / 4` for cover letter and interview brief.\n- Audit trigger commit: `{os.environ['AUDIT_COMMIT']}`.\n'''
+          audit.write_text(text)
+          PY
+
+      - name: Remove one-time verifier and commit evidence
+        run: |
+          rm -f .github/workflows/positioning-live-audit.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add campaign-audit.md qa/positioning-live.json
+          git add -u .github/workflows/positioning-live-audit.yml
+          git commit -m "Record live Allstate positioning verification"
+          git push
