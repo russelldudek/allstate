@@ -1,0 +1,26 @@
+{
+  "status": "passed",
+  "live_url": "https://russelldudek.github.io/allstate/",
+  "audited_source_sha": "c22cb78a5f7902e675e50509b2a6801d9bdd1958",
+  "workflow_run_id": 29425877857,
+  "verified_at_utc": "2026-07-15T14:56:00Z",
+  "asset_count": 15,
+  "byte_matches": 15,
+  "routes": [
+    "index.html",
+    "resume.html",
+    "cover-letter.html",
+    "interview-brief.html",
+    "120-day-plan.html",
+    "ai-action-trace.html"
+  ],
+  "pdf_page_contracts": {
+    "resume": 2,
+    "cover_letter": 1,
+    "interview_brief": 4,
+    "entry_plan": 3,
+    "ai_action_trace_review": 2
+  },
+  "confidentiality_scan": "passed",
+  "diagnostic_artifact_digest": "sha256:7e0245908b1cee7c1053c19d306fc9e7dc371b28f914b35f684c01a2cf98efd3"
+}
