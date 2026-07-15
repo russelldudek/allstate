@@ -1,0 +1,69 @@
+name: Verify live candidate campaign
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/live-audit.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify-live:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out audited main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Install PDF inspection tools
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends poppler-utils
+
+      - name: Retrieve and compare live campaign
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='https://russelldudek.github.io/allstate'
+          mkdir -p /tmp/live/docs
+
+          files=(
+            index.html
+            resume.html
+            cover-letter.html
+            interview-brief.html
+            120-day-plan.html
+            ai-action-trace.html
+            styles.css
+            brand-tokens.css
+            app.js
+            assets/brand/allstate-hands.png
+            docs/Russell-Dudek-Allstate-Resume.pdf
+            docs/Russell-Dudek-Allstate-Cover-Letter.pdf
+            docs/Russell-Dudek-Allstate-Interview-Brief.pdf
+            docs/Russell-Dudek-Allstate-120-Day-Plan.pdf
+            docs/Russell-Dudek-Allstate-AI-Action-Trace-Review.pdf
+          )
+
+          for file in "${files[@]}"; do
+            mkdir -p "/tmp/live/$(dirname "$file")"
+            curl --fail --location --retry 24 --retry-delay 5 --retry-all-errors \
+              --output "/tmp/live/$file" "$base/$file"
+            cmp --silent "$file" "/tmp/live/$file"
+          done
+
+          grep -Fq 'AI should move fast' /tmp/live/index.html
+          grep -Fq 'AI Action Flight Recorder' /tmp/live/ai-action-trace.html
+
+          test "$(pdfinfo /tmp/live/docs/Russell-Dudek-Allstate-Resume.pdf | awk '/^Pages:/{print $2}')" = '2'
+          test "$(pdfinfo /tmp/live/docs/Russell-Dudek-Allstate-Cover-Letter.pdf | awk '/^Pages:/{print $2}')" = '1'
+          test "$(pdfinfo /tmp/live/docs/Russell-Dudek-Allstate-Interview-Brief.pdf | awk '/^Pages:/{print $2}')" = '4'
+          test "$(pdfinfo /tmp/live/docs/Russell-Dudek-Allstate-120-Day-Plan.pdf | awk '/^Pages:/{print $2}')" = '3'
+          test "$(pdfinfo /tmp/live/docs/Russell-Dudek-Allstate-AI-Action-Trace-Review.pdf | awk '/^Pages:/{print $2}')" = '2'
+
+          ! grep -RIniE 'role[ -]?forge|russelldudek/roleforge' /tmp/live
+
+      - name: Report audited source
+        run: echo "Live files match audited main $(git rev-parse HEAD) byte for byte."
