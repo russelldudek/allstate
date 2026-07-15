@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -21,11 +21,38 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - name: Check out campaign
+        uses: actions/checkout@v4
+
+      - name: Configure and enable Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Upload static site
+        uses: actions/upload-pages-artifact@v3
         with:
           path: .
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Record successful deployment
+        shell: bash
+        run: |
+          current_message="$(git log -1 --pretty=%s)"
+          if [ "$current_message" = "Record successful Allstate campaign deployment" ]; then
+            echo "Deployment proof commit has itself been deployed."
+            exit 0
+          fi
+          printf 'GitHub Pages deployment completed successfully.\nDeployed source commit: %s\nLive site: https://russelldudek.github.io/allstate/\n' "$GITHUB_SHA" > .deployment-verified
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .deployment-verified
+          if git diff --cached --quiet; then
+            echo "Deployment proof is current."
+          else
+            git commit -m "Record successful Allstate campaign deployment"
+            git push
+          fi
