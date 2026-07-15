@@ -79,7 +79,7 @@ jobs:
 
           checks=0
           grep -Fq 'AI should move fast' /tmp/live/index.html || checks=$((checks + 1))
-          grep -Fq 'AI Action Flight Recorder' /tmp/live/ai-action-trace.html || checks=$((checks + 1))
+          grep -Fq 'AI Action Trace Review' /tmp/live/ai-action-trace.html || checks=$((checks + 1))
           test "$(pdfinfo /tmp/live/docs/Russell-Dudek-Allstate-Resume.pdf | awk '/^Pages:/{print $2}')" = '2' || checks=$((checks + 1))
           test "$(pdfinfo /tmp/live/docs/Russell-Dudek-Allstate-Cover-Letter.pdf | awk '/^Pages:/{print $2}')" = '1' || checks=$((checks + 1))
           test "$(pdfinfo /tmp/live/docs/Russell-Dudek-Allstate-Interview-Brief.pdf | awk '/^Pages:/{print $2}')" = '4' || checks=$((checks + 1))
