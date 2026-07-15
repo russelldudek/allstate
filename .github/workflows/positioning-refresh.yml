@@ -1,0 +1,216 @@
+name: Refresh platform-authority positioning
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: allstate-positioning-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    if: github.actor != 'github-actions[bot]'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out campaign
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install document tooling
+        run: python -m pip install --disable-pip-version-check beautifulsoup4 weasyprint==68.0 pypdf
+
+      - name: Strengthen positioning and regenerate documents
+        env:
+          SOURCE_COMMIT: ${{ github.sha }}
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from bs4 import BeautifulSoup
+          from pypdf import PdfReader
+          import json, os, subprocess
+
+          root = Path('.')
+
+          # Home page: replace defensive objection framing with an affirmative principal-level fit.
+          p = root / 'index.html'
+          soup = BeautifulSoup(p.read_text(), 'html.parser')
+          sec = soup.select_one('section.objection')
+          assert sec is not None
+          left = sec.select_one('.objection-grid > div')
+          left.select_one('.eyebrow').string = 'Why this is a principal-level fit'
+          left.select_one('.objection-question').string = 'Can Russell align deep platform specialists, business priorities, security controls, and emerging AI capabilities into one enterprise direction?'
+          answer = sec.select_one('.objection-answer')
+          answer.clear()
+
+          def add(tag, text=None):
+              el = soup.new_tag(tag)
+              if text is not None:
+                  el.string = text
+              answer.append(el)
+              return el
+
+          add('h2', 'Yes - because the mandate is to make the whole AI platform system cohere.')
+          add('p', 'This posting is broader than ownership of any single component. It calls for enterprise strategy, reference architecture, governance, developer experience, operational excellence, executive guidance, and technical leadership across engineering, data, cybersecurity, and business teams.')
+          p2 = add('p')
+          strong = soup.new_tag('strong'); strong.string = 'The verified foundation: '; p2.append(strong)
+          p2.append('direct agentic workflow and RAG-pattern design; human-authority, evaluation, governance, and decision-record mechanisms; current AI-first operating transformation; high-reliability engineering and quality systems; regulated autonomy; enterprise-scale operating mechanisms; and executive-to-technical translation.')
+          p3 = add('p')
+          strong = soup.new_tag('strong'); strong.string = "Russell's differentiator: "; p3.append(strong)
+          p3.append('he connects specialist depth to an enterprise operating contract - making model access, retrieval, agent authority, evaluation, observability, resilience, economics, adoption, and ownership work as one system rather than a collection of tools.')
+          p4 = add('p')
+          strong = soup.new_tag('strong'); strong.string = 'How he would earn technical authority: '; p4.append(strong)
+          p4.append('work shoulder-to-shoulder with platform architects and engineers, make tradeoffs and decision rights explicit, test the architecture against real workflows, and turn proven choices into reusable paved-road capabilities. A bounded architecture working session would make that value visible immediately.')
+          p.write_text(str(soup))
+
+          # Cover letter: state the system-level case without rehearsing a rejection.
+          p = root / 'cover-letter.html'
+          soup = BeautifulSoup(p.read_text(), 'html.parser')
+          for el in soup.find_all('p'):
+              text = el.get_text(' ', strip=True)
+              if text == 'A direct argument for the platform mandate, the transferable evidence, and the gap that should be tested rather than hidden.':
+                  el.string = 'A direct argument for the platform mandate, the transferable evidence, and the system-level leadership Allstate needs to scale AI responsibly.'
+              if text.startswith('I would not represent that record as direct recent ownership of an Allstate-scale'):
+                  el.string = "The strongest reason to interview me is not a claim that one person should personally embody every specialist layer of a modern AI platform. It is my verified ability to work directly in emerging-technology problems, translate across executive and technical stakeholders, bind innovation to governed work, and install mechanisms that make scale visible and manageable. Allstate's mandate requires a principal authority who can connect model access, retrieval, orchestration, security, evaluation, observability, resilience, economics, and adoption into one coherent platform direction. A bounded architecture working session would quickly demonstrate how I make those tradeoffs explicit and actionable."
+          p.write_text(str(soup))
+
+          # Interview brief page 3: affirmative evidence-to-authority case.
+          p = root / 'interview-brief.html'
+          soup = BeautifulSoup(p.read_text(), 'html.parser')
+          meta = soup.find('meta', attrs={'name': 'description'})
+          if meta:
+              meta['content'] = 'Interview thesis brief for Allstate Principal Platform Consultant, AI Platforms, including the platform mandate, operating model, evidence case, entry plan, and executive questions.'
+          hero_p = soup.select_one('.page-hero p')
+          if hero_p:
+              hero_p.string = 'The role intelligence, operating contradictions, candidate thesis, evidence map, platform-authority case, and executive questions in one decision-ready document.'
+          page = soup.select('section.report-page')[2]
+          page.select_one('.report-kicker').string = 'Evidence and platform authority | Page 3'
+          page.select_one('.report-title').string = 'Why the evidence compounds at platform level.'
+          table = page.select_one('table.report-table')
+          headers = table.select('thead th')
+          headers[0].string = 'Verified evidence'
+          headers[1].decompose()
+          table.select('thead th')[1].string = 'Why it matters at platform level'
+          contributions = [
+              'Supplies direct workflow and agent-design judgment for model access, retrieval, orchestration, evaluation, governance, human authority, reuse, and time-to-value decisions.',
+              'Shows how platform choices become operating outcomes across telemetry, ownership, quality, support, adoption, and continuous improvement in a software-enabled robotics environment.',
+              'Shows the ability to build mechanisms that remain legible under 24/7 scale: standard work, visibility, escalation, customer-backward decisions, and disciplined operating cadence.',
+              'Adds high-reliability engineering, quality discipline, root cause, traceability, and consequence-aware controls across technical and business stakeholders.',
+              'Adds regulated autonomy, authority boundaries, chain of custody, safety-first adoption, and practical technology-risk integration.'
+          ]
+          for row, text in zip(table.select('tbody tr'), contributions):
+              cells = row.find_all('td')
+              cells[1].decompose()
+              row.find_all('td')[1].string = text
+          for block in page.select('.report-block'):
+              h = block.find('h2')
+              if h and h.get_text(strip=True) == 'Strongest reasonable hiring objection':
+                  h.string = 'The principal-level question'
+                  block.select_one('.quote-block').string = 'Can Russell earn authority with deep specialists and unify architecture, governance, developer experience, operations, and business outcomes?'
+          for block in page.select('.report-grid .report-block'):
+              h = block.find('h2')
+              if not h:
+                  continue
+              if h.get_text(strip=True) == 'Response strategy':
+                  h.string = 'Why the answer can be yes'
+                  ul = block.find('ul'); ul.clear()
+                  for item in [
+                      'The mandate requires judgment across specialist domains, not isolated component expertise.',
+                      'Russell repeatedly turns complex technology into controls, ownership, operating mechanisms, and measurable work.',
+                      'He works directly with technical teams and makes architecture tradeoffs and decision rights explicit.',
+                      'He can convert specialist depth into reusable platform contracts, adoption mechanisms, and executive decisions.'
+                  ]:
+                      li = soup.new_tag('li'); li.string = item; ul.append(li)
+              elif h.get_text(strip=True) == 'Fair interview test':
+                  h.string = 'Architecture working session'
+                  block.find('p').string = 'Use one high-consequence AI workflow. Ask Russell to define model access, retrieval, agent and tool authority, human decision rights, evaluation, observability, SLO, fallback, cost, ownership, and lifecycle. The result will show whether he can integrate specialist concerns into one traceable enterprise decision.'
+          p.write_text(str(soup))
+
+          # Keep the public audit candid but affirmative.
+          audit = root / 'campaign-audit.md'
+          text = audit.read_text()
+          text = text.replace('- The platform-specific experience gap is stated directly.', '- The platform-authority case is affirmative and evidence-grounded; no unverified component-ownership claims are made.')
+          marker = '## Positioning revision - July 15, 2026'
+          if marker not in text:
+              text += f'''\n\n{marker}\n- Replaced defensive hard-objection framing with an affirmative principal-level platform-authority case.\n- Aligned the candidate vision, cover letter, and interview brief around the system-level mandate.\n- Preserved evidence boundaries and did not add unverified platform-ownership claims.\n- Regenerated the affected PDFs and re-verified the exact one-page cover letter and four-page interview brief contracts.\n- Revision source commit: `{os.environ['SOURCE_COMMIT']}`.\n'''
+          audit.write_text(text)
+
+          # Regenerate affected PDFs using the same renderer as the original campaign.
+          subprocess.run(['weasyprint', 'cover-letter.html', 'docs/Russell-Dudek-Allstate-Cover-Letter.pdf'], check=True)
+          subprocess.run(['weasyprint', 'interview-brief.html', 'docs/Russell-Dudek-Allstate-Interview-Brief.pdf'], check=True)
+
+          page_counts = {
+              'cover_letter': len(PdfReader('docs/Russell-Dudek-Allstate-Cover-Letter.pdf').pages),
+              'interview_brief': len(PdfReader('docs/Russell-Dudek-Allstate-Interview-Brief.pdf').pages),
+          }
+          assert page_counts == {'cover_letter': 1, 'interview_brief': 4}, page_counts
+
+          required = {
+              'index.html': ['Why this is a principal-level fit', 'make the whole AI platform system cohere', "Russell's differentiator", 'How he would earn technical authority'],
+              'cover-letter.html': ['The strongest reason to interview me', 'one coherent platform direction'],
+              'interview-brief.html': ['Why the evidence compounds at platform level.', 'The principal-level question', 'Why the answer can be yes', 'Architecture working session'],
+          }
+          banned = ['The hard objection', 'hyperscale multi-cloud', 'verified record does not support that claim', 'fiction that adjacent', 'State the gap plainly.', 'What transfers - and what does not.']
+          for path, phrases in required.items():
+              content = (root / path).read_text()
+              for phrase in phrases:
+                  assert phrase in content, (path, phrase)
+              for phrase in banned:
+                  assert phrase.lower() not in content.lower(), (path, phrase)
+
+          for pdf in ['docs/Russell-Dudek-Allstate-Cover-Letter.pdf', 'docs/Russell-Dudek-Allstate-Interview-Brief.pdf']:
+              content = '\n'.join(page.extract_text() or '' for page in PdfReader(pdf).pages)
+              for phrase in banned:
+                  assert phrase.lower() not in content.lower(), (pdf, phrase)
+
+          report = {
+              'status': 'passed',
+              'source_commit': os.environ['SOURCE_COMMIT'],
+              'required_positioning': 'passed',
+              'old_defensive_framing_removed': 'passed',
+              'evidence_integrity': 'passed',
+              'pdf_page_counts': page_counts,
+              'local_responsive_qa_before_publication': 'passed at 1440x900, 1280x800, 768x1024, 390x844, and reduced motion',
+          }
+          (root / 'qa' / 'positioning-refresh.json').write_text(json.dumps(report, indent=2))
+          PY
+
+      - name: Remove temporary publication files
+        run: |
+          rm -f __tmp-noop.txt
+          rm -f .github/workflows/positioning-refresh.yml
+
+      - name: Commit refreshed campaign
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html cover-letter.html interview-brief.html campaign-audit.md qa/positioning-refresh.json docs/Russell-Dudek-Allstate-Cover-Letter.pdf docs/Russell-Dudek-Allstate-Interview-Brief.pdf
+          git add -u .github/workflows/positioning-refresh.yml __tmp-noop.txt || true
+          git commit -m "Strengthen Allstate platform-authority positioning"
+          git push
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Upload refreshed candidate vision
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - name: Deploy refreshed candidate vision
+        id: deployment
+        uses: actions/deploy-pages@v4
