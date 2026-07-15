@@ -6,7 +6,7 @@ Campaign state: complete. Repository, artifact, print, confidentiality, interact
 - Candidate evidence is limited to the verified canonical record.
 - Historical titles and dates are preserved.
 - Concepts are not represented as production deployments.
-- The platform-specific experience gap is stated directly.
+- The platform-authority case is affirmative and evidence-grounded; no unverified component-ownership claims are made.
 - Public company signals are distinguished from candidate hypotheses.
 
 ## Brand fidelity
@@ -45,3 +45,11 @@ Campaign state: complete. Repository, artifact, print, confidentiality, interact
 - Fifteen published assets were fetched from GitHub Pages and matched the audited source byte-for-byte: six HTML routes, two stylesheets, one script, the official logo asset, and five PDFs.
 - Live PDF page contracts passed at `2 / 1 / 4 / 3 / 2`.
 - Live candidate-facing confidentiality scan returned zero prohibited-source matches.
+
+
+## Positioning revision - July 15, 2026
+- Replaced defensive hard-objection framing with an affirmative principal-level platform-authority case.
+- Aligned the candidate vision, cover letter, and interview brief around the system-level mandate.
+- Preserved evidence boundaries and did not add unverified platform-ownership claims.
+- Regenerated the affected PDFs and re-verified the exact one-page cover letter and four-page interview brief contracts.
+- Revision source commit: `66942d9f73156cbb9a28e4ce3a1c28678a51d2b6`.

@@ -1,0 +1,12 @@
+{
+  "status": "passed",
+  "source_commit": "66942d9f73156cbb9a28e4ce3a1c28678a51d2b6",
+  "required_positioning": "passed",
+  "old_defensive_framing_removed": "passed",
+  "evidence_integrity": "passed",
+  "pdf_page_counts": {
+    "cover_letter": 1,
+    "interview_brief": 4
+  },
+  "local_responsive_qa_before_publication": "passed at 1440x900, 1280x800, 768x1024, 390x844, and reduced motion"
+}
