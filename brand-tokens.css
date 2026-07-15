@@ -1,0 +1,17 @@
+/* Allstate candidate campaign brand tokens.
+   Official/source-sampled recognition color: #00339F from the official Allstate hands PNG.
+   Supporting neutrals and trace colors are candidate-created for the platform metaphor. */
+:root {
+  --allstate-blue: #00339F;
+  --allstate-blue-dark: #001f5b;
+  --allstate-blue-soft: #dbe8ff;
+  --ink: #0b1930;
+  --ink-2: #263650;
+  --paper: #ffffff;
+  --mist: #f2f6fb;
+  --line: #cbd6e5;
+  --trace-amber: #f2b544;
+  --trace-teal: #2aa895;
+  --trace-red: #d45c5c;
+  --night: #07162e;
+}

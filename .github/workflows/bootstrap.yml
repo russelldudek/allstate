@@ -1,8 +1,9 @@
 name: Install complete Allstate candidate campaign
 
 on:
-  push:
+  pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened]
     paths:
       - '.github/workflows/bootstrap.yml'
 
@@ -13,9 +14,10 @@ jobs:
   install:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out repository
+      - name: Check out campaign branch
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
 
       - name: Reconstruct and validate source package
@@ -31,7 +33,7 @@ jobs:
         run: |
           set -euo pipefail
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends fonts-lato libpango-1.0-0 libpangoft2-1.0-0 poppler-utils qpdf
+          sudo apt-get install -y --no-install-recommends fonts-lato libpango-1.0-0 libpangoft2-1.0-0 librsvg2-bin poppler-utils qpdf
           python -m pip install --upgrade pip
           python -m pip install weasyprint
 
@@ -40,8 +42,19 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p assets/brand
-          curl --fail --location --retry 3 --output assets/brand/allstate-hands.png \
-            https://agents.allstate.com/permanent-b0b701/assets/images/beacon.3f4c3812.png
+          curl --fail --location --retry 3 \
+            --user-agent 'Mozilla/5.0' \
+            --referer 'https://agents.allstate.com/' \
+            --output assets/brand/allstate-hands.png \
+            https://agents.allstate.com/permanent-b0b701/assets/images/beacon.3f4c3812.png || true
+          if ! file assets/brand/allstate-hands.png 2>/dev/null | grep -qi 'PNG image data'; then
+            rm -f assets/brand/allstate-hands.png
+            curl --fail --location --retry 3 \
+              --user-agent 'Mozilla/5.0' \
+              --output /tmp/allstate-logo.svg \
+              https://upload.wikimedia.org/wikipedia/en/3/30/Allstate_logo.svg
+            rsvg-convert --format png --output assets/brand/allstate-hands.png /tmp/allstate-logo.svg
+          fi
           test -s assets/brand/allstate-hands.png
           file assets/brand/allstate-hands.png | grep -qi 'PNG image data'
 
@@ -73,13 +86,14 @@ jobs:
             --exclude-dir=.git --exclude-dir=.bootstrap --exclude='bootstrap.yml' .
           rm -f docs/*.txt
 
-      - name: Publish complete campaign to main
+      - name: Publish complete campaign to pull-request branch
         shell: bash
         run: |
           set -euo pipefail
-          rm -rf .bootstrap .github/workflows/bootstrap.yml
+          rm -rf .bootstrap
+          rm -f .github/workflows/pages.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           git commit -m "Publish complete Allstate AI platforms candidate campaign"
-          git push origin main
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
