@@ -1,6 +1,6 @@
 # Candidate Campaign Audit
 
-Campaign state: release-ready. Repository, artifact, print, confidentiality, and interaction gates passed. Live-route verification remains the final external deployment check.
+Campaign state: complete. Repository, artifact, print, confidentiality, interaction, deployment, and live-route gates passed.
 
 ## Factual integrity
 - Candidate evidence is limited to the verified canonical record.
@@ -36,7 +36,12 @@ Campaign state: release-ready. Repository, artifact, print, confidentiality, and
 - Source, filenames, extracted PDF text, and PDF metadata were scanned for internal-only process names.
 - Complete artifact manifest is committed to `main` through a reviewed pull request.
 - Temporary installer payloads were removed before release.
-- GitHub Pages deployment workflow is isolated from campaign-generation plumbing.
+- GitHub Pages deployment is isolated from campaign-generation plumbing.
 
-## Final external gate
-- Verify the public GitHub Pages routes and PDF responses against the deployed `main` head.
+## Live release verification
+- Live URL: `https://russelldudek.github.io/allstate/`.
+- Audited source commit: `c22cb78a5f7902e675e50509b2a6801d9bdd1958`.
+- GitHub Actions audit run: `29425877857`.
+- Fifteen published assets were fetched from GitHub Pages and matched the audited source byte-for-byte: six HTML routes, two stylesheets, one script, the official logo asset, and five PDFs.
+- Live PDF page contracts passed at `2 / 1 / 4 / 3 / 2`.
+- Live candidate-facing confidentiality scan returned zero prohibited-source matches.
